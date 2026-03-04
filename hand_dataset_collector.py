@@ -6,7 +6,7 @@ import csv
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
-DATASET_FILE = "gesture_dataset.csv"
+DATASET_FILE = "/model/gesture_detection/gesture_dataset.csv"
 
 def normalize_landmarks(landmarks):
     # Use wrist (0) as origin

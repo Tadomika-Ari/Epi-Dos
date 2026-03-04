@@ -6,8 +6,8 @@ import csv
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
-DATASET_FILE = "gesture_dataset.csv"
-MODEL_FILE = "gesture_model.pth"
+DATASET_FILE = "/model/gesture_detection/gesture_dataset.csv"
+MODEL_FILE = "/model/gesture_detection/gesture_model.pth"
 EPOCHS = 100
 BATCH_SIZE = 32
 LEARNING_RATE = 0.001
