@@ -6,6 +6,9 @@ C'est un projet qui vise à recréer une IA GLaDOS capable d'assister n'importe 
 
 Inspiré d'une célèbre IA du jeu vidéo Portal 2, mais aussi des projets déjà effectués un peu partout sur Internet.
 
+
+![glados](https://github.com/user-attachments/assets/1f69f6fd-e8fd-4431-956d-32d97b91bb56)
+
 ***
 
 Fonctionnalité :
