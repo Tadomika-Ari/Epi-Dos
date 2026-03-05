@@ -12,6 +12,7 @@ def init():
     print("0 : hand detection.\n")
     print("1 : object detection\n")
     print("2 : llm with voice Glados\n")
+    print("3 : voice to voice with GlaDOS\n")
     choice = input("donne ton choix : ")
 
     if (int(choice) == 0):
