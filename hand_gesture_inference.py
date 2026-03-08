@@ -8,7 +8,7 @@ import numpy as np
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
-MODEL_FILE = "/model/gesture_detection/gesture_model.pth"
+MODEL_FILE = "model/gesture_detection/gesture_model.pth"
 
 # ---- Neural network definition (same as training) ----
 class GestureNet(nn.Module):
@@ -74,7 +74,7 @@ def main():
 
     detector = vision.HandLandmarker.create_from_options(options)
 
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(2)
 
     while True:
         ret, frame = cap.read()
