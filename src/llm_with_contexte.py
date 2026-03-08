@@ -11,6 +11,7 @@ import json
 
 MODEL = "qwen3-next:80b-cloud"
 VOICE_PATH = "model/tts/glados/fr_FR-glados-medium.onnx"
+PERSONALITY_PATH = "src/personality/personality.json"
 
 def should_flush(buf: str) -> bool:
     buf = buf.strip()
@@ -35,7 +36,7 @@ def player_worker(q: "queue.Queue[str | None]"):
 
 def llm():
     print(f"start convesation with {MODEL}")
-    with open("personality.json", "r", encoding="utf-8") as f:
+    with open(PERSONALITY_PATH, "r", encoding="utf-8") as f:
         personnality = json.load(f)
     history = [personnality]
     while (True):
