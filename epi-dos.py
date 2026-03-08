@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-from hand_detection import main
-from object_detection import object
-from voice_llm import llm
+from test.hand_detection import main
+from test.object_detection import object
+from test.voice_llm import llm
 
 
 def init():

@@ -1,5 +1,7 @@
 import cv2
 from ultralytics import YOLO
+import wave
+from piper import PiperVoice
 
 def Yolo():
     model = YOLO('model/yolo/yolov8n.pt')  

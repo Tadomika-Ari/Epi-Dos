@@ -5,10 +5,18 @@ import os
 import torch
 import torch.nn as nn
 import numpy as np
+import wave
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
+from piper import PiperVoice
+import subprocess
+import threading
+import queue
+import tempfile
 
-MODEL_FILE = "/model/gesture_detection/gesture_model.pth"
+MODEL_FILE = "model/gesture_detection/gesture_model.pth"
+VOICE_PATH = "model/tts/glados/fr_FR-glados-medium.onnx"
+
 
 # ---- Neural network definition (same as training) ----
 class GestureNet(nn.Module):
@@ -47,6 +55,16 @@ def normalize_landmarks(landmarks):
 
     return np.array(norm, dtype=np.float32)
 
+def speak(voice, text: str):
+    def _run():
+        fd, path = tempfile.mkstemp(suffix=".wav")
+        os.close(fd)
+        with wave.open(path, "wb") as wav_file:
+            voice.synthesize_wav(text, wav_file)
+        subprocess.run(["mpv", "--no-terminal", "--really-quiet", path])
+        os.remove(path)
+    threading.Thread(target=_run, daemon=True).start()
+
 def main():
     # ---- Load trained model ----
     checkpoint = torch.load(MODEL_FILE, weights_only=False)
@@ -74,7 +92,9 @@ def main():
 
     detector = vision.HandLandmarker.create_from_options(options)
 
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(2)
+
+    voice = PiperVoice.load(VOICE_PATH)
 
     while True:
         ret, frame = cap.read()
@@ -111,6 +131,7 @@ def main():
 
             if confidence > 0.7:
                 text = f"Gesture: {gesture_id} ({confidence*100:.1f}%)"
+                speak(voice, "trouver")
             else:
                 text = "Gesture: ?"
 

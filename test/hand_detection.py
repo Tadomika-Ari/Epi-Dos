@@ -92,3 +92,12 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# class hand:
+
+#     def __init__(self, hand, nb_hand, x, y):
+#         self.hand = hand
+#         self.nb_hand = nb_hand
+#         self.x = x
+#         self.y = y
