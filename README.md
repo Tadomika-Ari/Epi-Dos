@@ -6,6 +6,12 @@ C'est un projet qui vise à recréer une IA GLaDOS capable d'assister n'importe 
 
 Inspiré d'une célèbre IA du jeu vidéo Portal 2, mais aussi des projets déjà effectués un peu partout sur Internet.
 
+<img src="https://github.com/user-attachments/assets/1f69f6fd-e8fd-4431-956d-32d97b91bb56" 
+        alt="Picture" 
+        width="800" 
+        height="600" 
+        style="display: block; margin: 10" />
+
 ***
 
 Fonctionnalité :
@@ -15,6 +21,11 @@ Fonctionnalité :
 * Reconnaissance de geste.
 * Détection objet.
 * Et bien d'autres. 
+
+```
+./env/bin/python -m pip install -r requiremen.txt
+
+```
 
 
 ***

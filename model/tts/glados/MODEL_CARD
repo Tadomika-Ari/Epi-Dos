@@ -1,0 +1,10 @@
+# Model card for glados fr (medium)
+
+* Language: fr_FR (normaliced)
+* Speakers: 1
+* Quality: medium
+* Samplerate: 22050Hz
+
+## Training
+
+Finetuned from: siwis

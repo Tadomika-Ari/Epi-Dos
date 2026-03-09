@@ -1,0 +1,10 @@
+mediapipe
+numpy
+opencv-contrib-python
+pynput
+requests
+torch
+ultralytics
+ollama
+piper-tts
+vosk
