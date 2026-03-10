@@ -23,7 +23,7 @@ Fonctionnalité :
 * Et bien d'autres. 
 
 ```
-./env/bin/python -m pip install -r requiremen.txt
+./env/bin/python -m pip install -r requirement.txt
 
 ```
 
