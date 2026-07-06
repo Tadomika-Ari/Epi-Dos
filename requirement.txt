@@ -7,3 +7,7 @@ rapidfuzz
 sounddevice
 pyyaml
 spacy
+
+requests
+rich
+python-dotenv
