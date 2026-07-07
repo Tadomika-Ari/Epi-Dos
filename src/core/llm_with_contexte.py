@@ -1,7 +1,7 @@
 import requests
-from subagent.check_subagent import check_subagent
+from src.subagent.check_subagent import check_subagent
 from ollama import chat
-import core.state as state
+import src.core.state as state
 import wave
 from piper import PiperVoice
 import subprocess

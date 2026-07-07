@@ -1,18 +1,10 @@
-#!/usr/bin/env python3
-
 import sys
 from pathlib import Path
-
-ROOT_DIR = Path(__file__).resolve().parent
-SRC_DIR = ROOT_DIR / "src"
-if str(SRC_DIR) not in sys.path:
-    sys.path.insert(0, str(SRC_DIR))
-
-from core.voice_llm import llm
-from core.llm_with_contexte import llm as llm_with_contexte
-from core.core import core
-from core.waiting_message import waiting_message
-from core.fast import main as llm_fast
+from src.core.voice_llm import llm
+from src.core.llm_with_contexte import llm as llm_with_contexte
+from src.core.core import core
+from src.core.waiting_message import waiting_message
+from src.core.fast import main as llm_fast
 
 def init():
     print("\n")
