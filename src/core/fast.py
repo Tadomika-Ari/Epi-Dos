@@ -51,13 +51,16 @@ def callback(indata, frames, time, status):
         print(status, file=sys.stderr)
     audio_queue.put(bytes(indata))
 
+def execute_command(args):
+    if args:
+        subprocess.run(args)
+
 def check_respons(dico, text):
     best_score = 0
     best_entry = None
     for entry in dico:
         for trigger in entry["trigger"]:
             score = fuzz.partial_ratio(trigger.lower(), text)
-            print(score)
             if score > best_score:
                 best_score = score
                 best_entry = entry
@@ -164,7 +167,8 @@ def main():
                     if command_result:
                         args = shlex.split(command_result)
                         print(f"args: {args}")
-                        subprocess.run(args)
+                        cmd_t = threading.Thread(target=execute_command, args=(args,), daemon=True)
+                        cmd_t.start()
 
                     if respons:
                         fd, path = tempfile.mkstemp(prefix="tts_", suffix=".wav")
