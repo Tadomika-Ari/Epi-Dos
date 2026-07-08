@@ -24,3 +24,4 @@ devenv.local.yaml
 .pre-commit-config.yaml
 
 .env
+.spotify_token.json
