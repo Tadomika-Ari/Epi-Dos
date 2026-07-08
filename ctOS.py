@@ -14,8 +14,9 @@ def main():
     if nb <= 1:
         help()
         return
-    if sys.argv[1] == "--test":
-        tranquillity()
+    if sys.argv[1] == "--demo":
+        demo()
+        start()
         return
     if sys.argv[1] == "--music":
         music_command()
@@ -24,8 +25,7 @@ def main():
         init()
         return
     if sys.argv[1] == "--start":
-        demo()
-        start()
+        tranquillity(5)
         return
     if sys.argv[1] == "--help" or "-h":
         help()
