@@ -1,4 +1,3 @@
-import requests
 from ollama import chat
 import wave
 from piper import PiperVoice
@@ -8,7 +7,7 @@ import queue
 import tempfile
 import os
 
-import core.state as state
+import src.core.state as state
 
 MODEL = "llama3.2:3b"
 VOICE_PATH = "model/tts/glados/fr_FR-glados-medium.onnx"

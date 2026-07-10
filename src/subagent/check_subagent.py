@@ -1,4 +1,4 @@
-from subagent.subagent_cmd import subagent_cmd
+from src.subagent.subagent_cmd import subagent_cmd
 
 def check_subagent(response: str):
     if "<cmd>" in response:

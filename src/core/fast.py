@@ -14,10 +14,7 @@ import tempfile
 import os
 import wave
 import spacy
-
-nlp = spacy.load("fr_core_news_sm")
-
-SetLogLevel(-1)
+import shlex
 
 INTENT_MAP = {
     "montrer":  ("ls -l", True),
@@ -54,21 +51,24 @@ def callback(indata, frames, time, status):
         print(status, file=sys.stderr)
     audio_queue.put(bytes(indata))
 
+def execute_command(args):
+    if args:
+        subprocess.run(args)
+
 def check_respons(dico, text):
     best_score = 0
     best_entry = None
     for entry in dico:
         for trigger in entry["trigger"]:
             score = fuzz.partial_ratio(trigger.lower(), text)
-            print(score)
             if score > best_score:
                 best_score = score
                 best_entry = entry
     if best_score > 80 and best_entry:
-        return random.choice(best_entry["respons"])
-    return None
+        return random.choice(best_entry["respons"]), best_entry
+    return None, None
 
-def parse_intent(text):
+def parse_intent(text, nlp):
     doc = nlp(text.lower())
 
     cmd = None
@@ -108,15 +108,27 @@ def player_worker(q: "queue.Queue[str | None]"):
         except OSError:
             pass
 
+def check_data_command(best_entry):
+    try:
+        command = best_entry["commands"][0]
+    except:
+        command = None
+    return command
+
 def main():
+
+    print("Initialisation VOSK")
+    nlp = spacy.load("fr_core_news_sm")
+    print("VOSK load")
+    SetLogLevel(-1)
+    print("Tranquillity lancé")
+
     model = Model(MODEL_PATH)
     rec = KaldiRecognizer(model, SAMPLE_RATE)
     on_use = False
 
     with open("data.yaml", "r") as file:
         dico = yaml.safe_load(file)
-    print(dico)
-    print("\n")
 
     # init phase for tts (for test)
     voice = PiperVoice.load(VOICE_PATH)
@@ -144,11 +156,19 @@ def main():
                     print(f"[final] {text}")
                     print("\n")
                     text_lower = text.lower()
-                    respons = check_respons(dico, text_lower)
+                    respons, best_entry = check_respons(dico, text_lower)
                     print(respons)
                     
-                    command_result = parse_intent(text_lower)
+                    command_result = parse_intent(text_lower, nlp)
+                    if (command_result == None):
+                        command_result = check_data_command(best_entry)
                     print(command_result if command_result else "[aucune commande trouvée]")
+
+                    if command_result:
+                        args = shlex.split(command_result)
+                        print(f"args: {args}")
+                        cmd_t = threading.Thread(target=execute_command, args=(args,), daemon=True)
+                        cmd_t.start()
 
                     if respons:
                         fd, path = tempfile.mkstemp(prefix="tts_", suffix=".wav")

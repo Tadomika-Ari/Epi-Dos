@@ -51,3 +51,15 @@
 - trigger: ["trouve", "cherche"]
   respons:
   - "Voici votre recherche."
+- trigger: ["allume la musique", "met de la musique", "met spotify"]
+  respons:
+  - "De la musique pour vous endormir ? Comme c'est intéréssant."
+  - "Voici de la musique pour vous soulagez"
+  commands:
+  - "python ctOS.py --music resume"
+- trigger: ["met en pause", "Eteind la musique", "enlève la musique"]
+  respons:
+  - "Vous ne voulez pas écouter ce bruit ? Je peux comprendre."
+  - "Vous voulez arréter cet horrible bruit ? C'est dommage"
+  commands:
+  - "python ctOS.py --music pause"

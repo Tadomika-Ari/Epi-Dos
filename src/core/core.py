@@ -3,10 +3,10 @@ import threading as Thread
 import subprocess
 import time
 import stat
-from core.voice_llm import llm
-from core.llm_with_contexte import llm as llm_with_context
-from core.waiting_message import waiting_message
-import core.state as state
+from src.core.voice_llm import llm
+from src.core.llm_with_contexte import llm as llm_with_context
+from src.core.waiting_message import waiting_message
+import src.core.state as state
 
 
 def minuteur():

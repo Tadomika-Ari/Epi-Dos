@@ -2,7 +2,7 @@ import requests
 from ollama import chat
 import wave
 from piper import PiperVoice
-import core.state as state
+import src.core.state as state
 import subprocess
 import threading
 import queue

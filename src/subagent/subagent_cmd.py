@@ -1,6 +1,6 @@
 import os
 import re
-import core.state as state
+import src.core.state as state
 
 def send_command(cmd: str):
     if not os.path.exists(state.fifo_path):

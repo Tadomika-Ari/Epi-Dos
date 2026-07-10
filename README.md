@@ -30,13 +30,12 @@ Fonctionnalité à prévoir :
 
 ***
 
-Dévellopement :
+Dévellopement / Utilisation :
 
 Pour linux ou windows :
 
 ```bash
 ./env/bin/python -m pip install -r requirement.txt
-
 ```
 
 Pour nixos : 
@@ -51,6 +50,13 @@ puis
 
 ```bash
 devenv start
+```
+
+Utilisation :
+
+```bash
+python ctOS.py --init
+python ctOS.py --start
 ```
 
 
