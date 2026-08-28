@@ -23,5 +23,12 @@ def init():
         print("Premier utilisation detecter. Redirection vers la connection spotify")
         time.sleep(2)
         get_token()
+
+    token_discord = os.getenv("API_KEY")
+    if not token_discord:
+        print("Pas de Clef API pour connecter Tranquility au bot discord. Si vous souhaitez l'utiliser inscrivez vous au bot discord et mettez la clef api dans le .env")
+    else:
+        print("Clef API est détécter. L'integration discord est donc disponible.")
+        time.sleep(2)
     print("Tous est désormais initialisé. Veuillez faire ctOS --start")
     time.sleep(2)
