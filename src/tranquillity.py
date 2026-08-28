@@ -4,6 +4,7 @@ from src.core.voice_llm import llm
 from src.core.llm_with_contexte import llm as llm_with_contexte
 from src.core.core import core
 from src.core.waiting_message import waiting_message
+from src.core.gemini import gemini
 from src.core.fast import main as llm_fast
 
 def init(num: int):
@@ -25,10 +26,10 @@ def init(num: int):
         if (int(choice) == 3):
             core()
         if (int(choice) == 4):
-            waiting_message()
-        if (int(choice) == 5 or num == 5):
             llm_fast()
+        if (int(choice) == 5 or num == 5):
+            gemini()
     if (num == 5):
-        llm_fast()
+        gemini()
     if (int(choice) != 0):
         return

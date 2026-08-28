@@ -12,3 +12,5 @@ requests
 rich
 python-dotenv
 click
+
+google-generativeai
