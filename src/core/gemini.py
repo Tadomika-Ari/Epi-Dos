@@ -11,6 +11,8 @@ import google.generativeai as genai
 from settings.settings import IA_NAME as ia_name
 from dotenv import load_dotenv
 import re
+from vosk import Model, KaldiRecognizer, SetLogLevel
+import json
 load_dotenv()
 
 VOICE_PATH = "model/tts/glados/fr_FR-glados-medium.onnx"
@@ -113,6 +115,15 @@ def gemini():
         sys.exit(1)
 
     voice = PiperVoice.load(VOICE_PATH)
+    print("voice init success")
+
+    print("Initialisation VOSK")
+    print("VOSK load")
+    SetLogLevel(-1)
+
+    model = Model(MODEL_PATH)
+    rec = KaldiRecognizer(model, SAMPLE_RATE)
+
     clear_screen()
     print("==================================================")
     print("             💬 CHAT INITIALISÉ AVEC SUCCÈS        ")
@@ -133,63 +144,74 @@ def gemini():
     t_tts.start()
     t = threading.Thread(target=player_worker, args=(audio_q,), daemon=True)
     t.start()
-    while True:
-        try:
-            user_input = input("Vous : ").strip()
-            
-            if not user_input:
-                continue
-                
-            if user_input.lower() in ['exit', 'quit', 'quitter']:
-                print("\n Assistant : Au revoir ! Passez une excellente journée.")
+
+    with sd.RawInputStream(
+            samplerate=SAMPLE_RATE,
+            blocksize=BLOCK_SIZE,
+            dtype="int16",
+            channels=1,
+            callback=callback,
+    ):
+        while True:
+            try:
+                data = audio_queue.get()
+                audio_q: "queue.Queue[str | None]" = queue.Queue()
+                if rec.AcceptWaveform(data):
+                    result = json.loads(rec.Result())
+                    user_input = result.get("text", "").strip()
+                    if not user_input:
+                        continue
+                    if user_input.lower() in ['exit', 'quit', 'quitter']:
+                        print("\n Assistant : Au revoir ! Passez une excellente journée.")
+                        break
+                        
+                    if user_input.lower() == 'clear':
+                        clear_screen()
+                        print("==================================================")
+                        print("             CONVERSATION EN COURS             ")
+                        print("================================================--\n")
+                        continue
+
+                    print("Vous", user_input)
+                    print(" Assistant : ", end="", flush=True)
+                    response = chat.send_message(user_input, stream=True)
+
+                    streamed_text = ""
+                    spoken_upto = 0
+                    command_start = None
+                    
+                    for chunk in response:
+                        chunk_text = getattr(chunk, "text", "")
+                        if not chunk_text:
+                            continue
+
+                        print(chunk_text, end="", flush=True)
+                        streamed_text += chunk_text
+
+                        if command_start is None:
+                            command_match = detect_command(streamed_text)
+                            if command_match:
+                                command_start, commande = command_match
+                                print(f"\nCommande détectée : {commande}")
+
+                        safe_upto = command_start if command_start is not None else max(streamed_text.rfind(c) for c in ".!?:") + 1
+                        if safe_upto > spoken_upto:
+                            tts_fragment = streamed_text[spoken_upto:safe_upto]
+                            if tts_fragment.strip():
+                                tts_text_q.put(tts_fragment)
+                            spoken_upto = safe_upto
+                    print("\n")
+                    
+            except KeyboardInterrupt:
+                print("\n\n Assistant : Chat interrompu. Au revoir !")
+                audio_q.put(None)
+                t.join()
                 break
-                
-            if user_input.lower() == 'clear':
-                clear_screen()
-                print("==================================================")
-                print("             CONVERSATION EN COURS             ")
-                print("================================================--\n")
-                continue
-            
-            print(" Assistant : ", end="", flush=True)
-            response = chat.send_message(user_input, stream=True)
-
-            streamed_text = ""
-            spoken_upto = 0
-            command_start = None
-            
-            for chunk in response:
-                chunk_text = getattr(chunk, "text", "")
-                if not chunk_text:
-                    continue
-
-                print(chunk_text, end="", flush=True)
-                streamed_text += chunk_text
-
-                if command_start is None:
-                    command_match = detect_command(streamed_text)
-                    if command_match:
-                        command_start, commande = command_match
-                        print(f"\nCommande détectée : {commande}")
-
-                safe_upto = command_start if command_start is not None else max(streamed_text.rfind(c) for c in ".!?:") + 1
-                if safe_upto > spoken_upto:
-                    tts_fragment = streamed_text[spoken_upto:safe_upto]
-                    if tts_fragment.strip():
-                        tts_text_q.put(tts_fragment)   # ← non-bloquant, juste du texte
-                    spoken_upto = safe_upto
-            print("\n")
-            
-        except KeyboardInterrupt:
-            print("\n\n Assistant : Chat interrompu. Au revoir !")
-            audio_q.put(None)
-            t.join()
-            break
-        except Exception as e:
-            print(f"\nUne erreur est survenue lors de la communication avec l'API : {e}\n")
-            audio_q.put(None)
-            t.join()
-            break
+            except Exception as e:
+                print(f"\nUne erreur est survenue lors de la communication avec l'API : {e}\n")
+                audio_q.put(None)
+                t.join()
+                break
 
 if __name__ == "__main__":
     gemini()
