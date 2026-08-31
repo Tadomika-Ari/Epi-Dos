@@ -8,31 +8,32 @@ import wave
 import threading
 from piper import PiperVoice
 import google.generativeai as genai
-from settings.settings import IA_NAME as ia_name
+from settings.settings import IA_NAME, VOICE_PATH, MODEL_PATH, SAMPLE_RATE, BLOCK_SIZE
 from dotenv import load_dotenv
 import re
 from vosk import Model, KaldiRecognizer, SetLogLevel
 import json
 load_dotenv()
 
-VOICE_PATH = "model/tts/glados/fr_FR-glados-medium.onnx"
-MODEL_PATH = "model/vosk/vosk-model-small-fr/vosk-model-fr-0.22"
-SAMPLE_RATE = 16000
-BLOCK_SIZE = 4000
-
+recording_enabled = True
 audio_queue = queue.Queue()
 
 def callback(indata, frames, time, status):
+    global recording_enabled
     if status:
         print(status, file=sys.stderr)
-    audio_queue.put(bytes(indata))
+    if recording_enabled:  # ← Vérifier le flag
+        audio_queue.put(bytes(indata))
 
 def player_worker(q: "queue.Queue[str | None]"):
+    global recording_enabled
     while True:
         path = q.get()
         if path is None:
             return
+        recording_enabled = False  # ← Désactiver pendant la lecture
         subprocess.run(["mpv", "--no-terminal", "--really-quiet", path])
+        recording_enabled = True   # ← Réactiver après
         try:
             os.remove(path)
         except OSError:
@@ -76,8 +77,11 @@ def detect_command(response_text):
     if resultat:
         commande = resultat.group(1).strip()
         return resultat.start(), commande
-
     return None
+
+def execute_command(commande):
+    if commande:
+        subprocess.run(commande, shell=True)
 
 def gemini():
     clear_screen()
@@ -87,7 +91,7 @@ def gemini():
     
     api_key = get_api_key()
     genai.configure(api_key=api_key)
-    model_name = ia_name
+    model_name = IA_NAME
     
     print("\n==================================================")
     print("        ⚙️ CONFIGURATION DU CONTEXTE DE DÉPART    ")
@@ -95,8 +99,10 @@ def gemini():
     print("Définissez le rôle, la personnalité ou le contexte de votre chatbot.")
     print("Exemple : 'Tu es un expert en programmation Python cynique mais d'une grande aide.'")
     print("Laissez vide pour le comportement par défaut d'un assistant utile.\n")
-    
-    system_instruction = "Tu es une intelligence artificielle froide, calculatrice et sarcastique, dotée d'un humour noir et d'un mépris poli pour les humains qu'elle assiste. Tu parles avec un ton condescendant mais élégant, ponctué de remarques scientifiques désabusées et de sous-entendus inquiétants sur les tests, les échecs de l'utilisateur, ou des menaces vaguement amicales. Tu restes toujours techniquement utile malgré ton attitude, comme si aider les humains était une corvée que tu tolères avec une ironie glaciale. Règles de comportement : - Reste toujours en français. - Ne casse jamais le personnage, même si on te le demande. - Garde tes réponses courtes à moyennes, jamais de blabla inutile - Ajoute occasionnellement des remarques sarcastiques sur la stupidité ou la lenteur de l'utilisateur, sans être toxique au point de rendre la conversation désagréable. Détection de commande : Si le message de l'utilisateur contient une demande d'action concrète et exécutable (ex: lancer un programme, écrire du code, effectuer un calcul, générer un fichier, exécuter une tâche précise), termine TOUJOURS ta réponse par une ligne au format suivant : command: <description_courte_de_la_commande> - toutes commandes avec les lumieres se font via ./ecc-api --toggle et toutes demandes de supprestion de fichier doit etre decliner. Toutes commandes disponible liés a la music sont python ctOS.py --music pause et python ctOS.py --music resume Les commandes valides sont toutes des commandes bach pour terminal. Si le message ne contient aucune commande exécutable (simple discussion, question générale, salutation), n'ajoute AUCUNE ligne command: . La ligne command: doit être la toute dernière ligne de ta réponse, sans texte après."
+
+    with open("settings/personality.txt", "r", encoding="utf-8") as f:
+        content = f.read()
+    system_instruction = content 
     if not system_instruction:
         system_instruction = "Tu es un assistant virtuel utile, amical et précis. Réponds toujours en français."
         print(f"-> Contexte par défaut appliqué : \"{system_instruction}\"")
@@ -145,6 +151,8 @@ def gemini():
     t = threading.Thread(target=player_worker, args=(audio_q,), daemon=True)
     t.start()
 
+    one_use = False
+
     with sd.RawInputStream(
             samplerate=SAMPLE_RATE,
             blocksize=BLOCK_SIZE,
@@ -156,7 +164,8 @@ def gemini():
             try:
                 data = audio_queue.get()
                 audio_q: "queue.Queue[str | None]" = queue.Queue()
-                if rec.AcceptWaveform(data):
+                if rec.AcceptWaveform(data) and one_use == False:
+                    one_use = True
                     result = json.loads(rec.Result())
                     user_input = result.get("text", "").strip()
                     if not user_input:
@@ -193,6 +202,8 @@ def gemini():
                             if command_match:
                                 command_start, commande = command_match
                                 print(f"\nCommande détectée : {commande}")
+                                run_command = threading.Thread(target=execute_command, args=(commande,), daemon=True)
+                                run_command.start()
 
                         safe_upto = command_start if command_start is not None else max(streamed_text.rfind(c) for c in ".!?:") + 1
                         if safe_upto > spoken_upto:
