@@ -15,14 +15,3 @@ async def send_discord_message(text: str):
         )
         r.raise_for_status()
         return r.json()
-
-
-def sendMessage(message):
-    p = Path(".env")
-    if not p.exists():
-        print("Pas de .env detecter. Veuillez en créer un")
-        return 84
-        
-    my_key = os.getenv("API_KEY")
-    return 0
-
