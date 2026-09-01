@@ -1,10 +1,10 @@
 # Tranquillity
 
-Tranquillity ? 
+What is Tranquillity?
 
-C'est un projet qui vise à recréer un assistant personnel avec la voix IA GLaDOS, et capable d'assister n'importe quelles tâches sur un pc.
+Tranquillity is a project that aims to recreate a personal assistant with GLaDOS AI voice, capable of assisting with any task on a PC.
 
-Inspiré d'une célèbre IA du jeu vidéo Portal 2, mais aussi des projets déjà effectués un peu partout sur Internet.
+Inspired by the famous AI from the video game Portal 2, as well as projects already created throughout the Internet.
 
 <img src="https://github.com/user-attachments/assets/1f69f6fd-e8fd-4431-956d-32d97b91bb56" 
         alt="Picture" 
@@ -14,65 +14,68 @@ Inspiré d'une célèbre IA du jeu vidéo Portal 2, mais aussi des projets déj�
 
 ***
 
-Fonctionnalité :
+Features:
 
-* Prise en charge d'LLM local et personnalisé.
-* Reconnaissance de commande et phrase rapidement.
-* Utilise la cli ctOS, créer spécialement pour Tranquillity
-
-***
-
-Fonctionnalité à prévoir :
-
-* Prise en charge de la caméra.
-* Reconnaissance des gestes.
-* Et bien d'autre.
+* **Personal AI Assistant** with GLaDOS voice synthesis (TTS).
+* **Voice Recognition** - French language support with rapid command parsing.
+* **Music Control** - Spotify integration (pause, resume, device management).
+* **Lighting Control** - Smart light management.
+* **Discord Integration** - Send messages to Discord directly from commands.
+* **ctOS CLI** - Custom command-line interface created specifically for Tranquillity.
+* **Voice-to-Voice LLM** - Direct voice conversation with AI processing.
 
 ***
 
-Dévellopement / Utilisation :
+Planned Features:
 
-Pour linux ou windows :
+* Enhanced gesture recognition and commands.
+* Extended camera vision capabilities.
+* Additional smart home integrations.
+* More language support.
+* And much more.
+
+***
+
+Development / Usage:
+
+For Linux or Windows:
 
 ```bash
 ./env/bin/python -m pip install -r requirement.txt
 ```
 
-Pour nixos : 
+For NixOS:
 
-Nécessite devenv
+Requires devenv
 
 ```bash
 devenv init
 ```
 
-puis
+then
 
 ```bash
 devenv start
 ```
 
-Utilisation :
+Usage:
 
 ```bash
 python ctOS.py --init
 python ctOS.py --start
 ```
 
-
 ***
 
-Inspiration : 
+Inspiration:
 
-Ce projet ne s'est pas fait sans inspiration, ni sans aide.
-Le projet est avant tout à but éducatif, et voici donc les repos qui m'ont aidé :
-
+This project wouldn't exist without inspiration and help.
+The project is primarily educational, and here are the repositories that helped me:
 
 * https://github.com/dnhkng/GLaDOS
 
-
 ***
 
-J'accepte toute aide !
+I welcome any help!
 
 
