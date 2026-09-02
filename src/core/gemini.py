@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 import wave
 import threading
+import shlex
 from piper import PiperVoice
 import google.generativeai as genai
 from settings.settings import IA_NAME, VOICE_PATH, MODEL_PATH, SAMPLE_RATE, BLOCK_SIZE
@@ -22,7 +23,7 @@ def callback(indata, frames, time, status):
     global recording_enabled
     if status:
         print(status, file=sys.stderr)
-    if recording_enabled:  # ← Vérifier le flag
+    if recording_enabled:
         audio_queue.put(bytes(indata))
 
 def player_worker(q: "queue.Queue[str | None]"):
@@ -31,9 +32,9 @@ def player_worker(q: "queue.Queue[str | None]"):
         path = q.get()
         if path is None:
             return
-        recording_enabled = False  # ← Désactiver pendant la lecture
+        recording_enabled = False
         subprocess.run(["mpv", "--no-terminal", "--really-quiet", path])
-        recording_enabled = True   # ← Réactiver après
+        recording_enabled = True
         try:
             os.remove(path)
         except OSError:
@@ -41,11 +42,9 @@ def player_worker(q: "queue.Queue[str | None]"):
 
 
 def clear_screen():
-    # Nettoyer le terminal pour une meilleure expérience visuelle
     os.system('cls' if os.name == 'nt' else 'clear')
 
 def get_api_key():
-    # Tente de récupérer la clé depuis les variables d'environnement
     api_key = os.getenv("GEMINI_API_KEY")
     if api_key:
         return api_key
@@ -63,7 +62,7 @@ def tts_worker(text_q, out_q, voice):
     while True:
         fragment = text_q.get()
         if fragment is None:
-            out_q.put(None)  # propage l'arrêt au lecteur
+            out_q.put(None)
             return
         fd, path = tempfile.mkstemp(prefix="tts_", suffix=".wav")
         os.close(fd)
@@ -79,9 +78,16 @@ def detect_command(response_text):
         return resultat.start(), commande
     return None
 
-def execute_command(commande):
-    if commande:
-        subprocess.run(commande, shell=True)
+def execute_command(commande_raw):
+    if commande_raw:
+        try:
+            try:
+                args = shlex.split(commande_raw)
+                subprocess.run(args, shell=False)
+            except ValueError:
+                subprocess.run(commande_raw, shell=True)
+        except Exception as e:
+            pass
 
 def gemini():
     clear_screen()
@@ -152,7 +158,7 @@ def gemini():
     t.start()
 
     one_use = False
-
+    print("GO !")
     with sd.RawInputStream(
             samplerate=SAMPLE_RATE,
             blocksize=BLOCK_SIZE,
@@ -164,11 +170,13 @@ def gemini():
             try:
                 data = audio_queue.get()
                 audio_q: "queue.Queue[str | None]" = queue.Queue()
+                print("Parle !")
                 if rec.AcceptWaveform(data) and one_use == False:
                     one_use = True
                     result = json.loads(rec.Result())
                     user_input = result.get("text", "").strip()
                     if not user_input:
+                        one_use = False
                         continue
                     if user_input.lower() in ['exit', 'quit', 'quitter']:
                         print("\n Assistant : Au revoir ! Passez une excellente journée.")
@@ -179,6 +187,7 @@ def gemini():
                         print("==================================================")
                         print("             CONVERSATION EN COURS             ")
                         print("================================================--\n")
+                        one_use = False
                         continue
 
                     print("Vous", user_input)
@@ -200,10 +209,7 @@ def gemini():
                         if command_start is None:
                             command_match = detect_command(streamed_text)
                             if command_match:
-                                command_start, commande = command_match
-                                print(f"\nCommande détectée : {commande}")
-                                run_command = threading.Thread(target=execute_command, args=(commande,), daemon=True)
-                                run_command.start()
+                                command_start, _ = command_match
 
                         safe_upto = command_start if command_start is not None else max(streamed_text.rfind(c) for c in ".!?:") + 1
                         if safe_upto > spoken_upto:
@@ -212,6 +218,14 @@ def gemini():
                                 tts_text_q.put(tts_fragment)
                             spoken_upto = safe_upto
                     print("\n")
+
+                    if command_start is not None:
+                        _, commande = detect_command(streamed_text)
+                        if commande:
+                            print(f"Commande détectée : {commande}")
+                            run_command = threading.Thread(target=execute_command, args=(commande,), daemon=True)
+                            run_command.start()
+                    one_use = False
                     
             except KeyboardInterrupt:
                 print("\n\n Assistant : Chat interrompu. Au revoir !")
