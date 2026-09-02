@@ -32,7 +32,7 @@ def main():
         init()
         return
     if sys.argv[1] == "--start":
-        tranquillity(5)
+        tranquillity()
         return
     if sys.argv[1] == "--help" or "-h":
         help()
