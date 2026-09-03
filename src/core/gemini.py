@@ -8,12 +8,15 @@ import wave
 import threading
 import shlex
 from piper import PiperVoice
-import google.generativeai as genai
 from settings.settings import IA_NAME, VOICE_PATH, MODEL_PATH, SAMPLE_RATE, BLOCK_SIZE
 from dotenv import load_dotenv
 import re
 from vosk import Model, KaldiRecognizer, SetLogLevel
 import json
+
+from google import genai
+from google.genai import types
+
 load_dotenv()
 
 recording_enabled = True
@@ -96,7 +99,6 @@ def gemini():
     print("==================================================")
     
     api_key = get_api_key()
-    genai.configure(api_key=api_key)
     model_name = IA_NAME
     
     print("\n==================================================")
@@ -116,12 +118,17 @@ def gemini():
         print(f"-> Contexte personnalisé appliqué avec succès !")
 
     print("\nInitialisation du modèle...")
+
+    client = genai.Client(api_key=api_key)
+
     try:
-        model = genai.GenerativeModel(
-            model_name=model_name,
-            system_instruction=system_instruction
+        chat = client.chats.create(
+            model=model_name,
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction
+            ),
+            history=[]
         )
-        chat = model.start_chat(history=[])
     except Exception as e:
         print(f"Erreur lors de l'initialisation du modèle : {e}")
         sys.exit(1)
@@ -192,7 +199,7 @@ def gemini():
 
                     print("Vous", user_input)
                     print(" Assistant : ", end="", flush=True)
-                    response = chat.send_message(user_input, stream=True)
+                    response = chat.send_message_stream(user_input)
 
                     streamed_text = ""
                     spoken_upto = 0
