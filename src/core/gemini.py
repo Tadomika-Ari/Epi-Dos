@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 import re
 from vosk import Model, KaldiRecognizer, SetLogLevel
 import json
+import requests
 
 from google import genai
 from google.genai import types
@@ -92,6 +93,52 @@ def execute_command(commande_raw):
         except Exception as e:
             pass
 
+def search_web(query: str) -> str:
+    api_key = os.getenv("NEWSAPI_KEY")
+    if not api_key:
+        return "Erreur : clé NEWSAPI_KEY manquante dans les variables d'environnement."
+
+    mots_generaux = ["actualité", "actualités", "info", "infos", "news", "dernières", "nouvelles"]
+    is_general = any(mot in query.lower() for mot in mots_generaux)
+    q = "France" if is_general else query
+
+    try:
+        resp = requests.get(
+            "https://newsapi.org/v2/everything",
+            params={
+                "q": q,
+                "language": "fr",
+                "sortBy": "publishedAt",
+                "pageSize": 5,
+                "apiKey": api_key,
+            },
+            timeout=8,
+        )
+        data = resp.json()
+
+        if data.get("status") != "ok":
+            return f"Erreur API actualités : {data.get('message', 'inconnue')}"
+
+        articles = data.get("articles", [])
+        if not articles:
+            return "Aucun résultat trouvé pour cette recherche."
+
+        lignes = []
+        for a in articles:
+            titre = a.get("title", "").strip()
+            source = a.get("source", {}).get("name", "")
+            description = (a.get("description") or "").strip()
+            if titre:
+                ligne = f"- {titre} ({source})"
+                if description:
+                    ligne += f" : {description}"
+                lignes.append(ligne)
+
+        return "\n".join(lignes) if lignes else "Aucun résultat exploitable trouvé."
+
+    except requests.exceptions.RequestException as e:
+        return f"Erreur réseau lors de la recherche : {e}"
+    
 def gemini():
     clear_screen()
     print("==================================================")
@@ -125,7 +172,8 @@ def gemini():
         chat = client.chats.create(
             model=model_name,
             config=types.GenerateContentConfig(
-                system_instruction=system_instruction
+                system_instruction=system_instruction,
+                tools=[search_web]
             ),
             history=[]
         )
@@ -199,31 +247,22 @@ def gemini():
 
                     print("Vous", user_input)
                     print(" Assistant : ", end="", flush=True)
-                    response = chat.send_message_stream(user_input)
+                    response = chat.send_message(user_input)
 
-                    streamed_text = ""
-                    spoken_upto = 0
+                    streamed_text = response.text
+                    print(streamed_text, flush=True)
+
                     command_start = None
-                    
-                    for chunk in response:
-                        chunk_text = getattr(chunk, "text", "")
-                        if not chunk_text:
-                            continue
+                    command_match = detect_command(streamed_text)
+                    if command_match:
+                        command_start, _ = command_match
+                        spoken_text = streamed_text[:command_start]
+                    else:
+                        spoken_text = streamed_text
 
-                        print(chunk_text, end="", flush=True)
-                        streamed_text += chunk_text
+                    if spoken_text.strip():
+                        tts_text_q.put(spoken_text)
 
-                        if command_start is None:
-                            command_match = detect_command(streamed_text)
-                            if command_match:
-                                command_start, _ = command_match
-
-                        safe_upto = command_start if command_start is not None else max(streamed_text.rfind(c) for c in ".!?:") + 1
-                        if safe_upto > spoken_upto:
-                            tts_fragment = streamed_text[spoken_upto:safe_upto]
-                            if tts_fragment.strip():
-                                tts_text_q.put(tts_fragment)
-                            spoken_upto = safe_upto
                     print("\n")
 
                     if command_start is not None:
