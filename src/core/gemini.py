@@ -14,6 +14,7 @@ import re
 from vosk import Model, KaldiRecognizer, SetLogLevel
 import json
 import requests
+from src.subsystem.search_web import search_web
 
 from google import genai
 from google.genai import types
@@ -92,68 +93,15 @@ def execute_command(commande_raw):
                 subprocess.run(commande_raw, shell=True)
         except Exception as e:
             pass
-
-def search_web(query: str) -> str:
-    api_key = os.getenv("NEWSAPI_KEY")
-    if not api_key:
-        return "Erreur : clé NEWSAPI_KEY manquante dans les variables d'environnement."
-
-    mots_generaux = ["actualité", "actualités", "info", "infos", "news", "dernières", "nouvelles"]
-    is_general = any(mot in query.lower() for mot in mots_generaux)
-    q = "France" if is_general else query
-
-    try:
-        resp = requests.get(
-            "https://newsapi.org/v2/everything",
-            params={
-                "q": q,
-                "language": "fr",
-                "sortBy": "publishedAt",
-                "pageSize": 5,
-                "apiKey": api_key,
-            },
-            timeout=8,
-        )
-        data = resp.json()
-
-        if data.get("status") != "ok":
-            return f"Erreur API actualités : {data.get('message', 'inconnue')}"
-
-        articles = data.get("articles", [])
-        if not articles:
-            return "Aucun résultat trouvé pour cette recherche."
-
-        lignes = []
-        for a in articles:
-            titre = a.get("title", "").strip()
-            source = a.get("source", {}).get("name", "")
-            description = (a.get("description") or "").strip()
-            if titre:
-                ligne = f"- {titre} ({source})"
-                if description:
-                    ligne += f" : {description}"
-                lignes.append(ligne)
-
-        return "\n".join(lignes) if lignes else "Aucun résultat exploitable trouvé."
-
-    except requests.exceptions.RequestException as e:
-        return f"Erreur réseau lors de la recherche : {e}"
     
 def gemini():
     clear_screen()
-    print("==================================================")
-    print("       🤖 BIENVENUE SUR VOTRE GEMINI CHATBOT      ")
-    print("==================================================")
+    print("Initialisation Tranquillity")
     
     api_key = get_api_key()
     model_name = IA_NAME
     
-    print("\n==================================================")
-    print("        ⚙️ CONFIGURATION DU CONTEXTE DE DÉPART    ")
-    print("==================================================")
-    print("Définissez le rôle, la personnalité ou le contexte de votre chatbot.")
-    print("Exemple : 'Tu es un expert en programmation Python cynique mais d'une grande aide.'")
-    print("Laissez vide pour le comportement par défaut d'un assistant utile.\n")
+    print("Initialisation de la personalité")
 
     with open("settings/personality.txt", "r", encoding="utf-8") as f:
         content = f.read()
@@ -196,7 +144,6 @@ def gemini():
     print("             💬 CHAT INITIALISÉ AVEC SUCCÈS        ")
     print("==================================================")
     print(f"Modèle utilisé  : {model_name}")
-    print(f"Contexte système: \"{system_instruction}\"")
     print("--------------------------------------------------")
     print("Instructions :")
     print(" - Tapez votre message et appuyez sur Entrée.")
@@ -213,7 +160,7 @@ def gemini():
     t.start()
 
     one_use = False
-    print("GO !")
+    print("En écoute...")
     with sd.RawInputStream(
             samplerate=SAMPLE_RATE,
             blocksize=BLOCK_SIZE,
@@ -225,7 +172,6 @@ def gemini():
             try:
                 data = audio_queue.get()
                 audio_q: "queue.Queue[str | None]" = queue.Queue()
-                print("Parle !")
                 if rec.AcceptWaveform(data) and one_use == False:
                     one_use = True
                     result = json.loads(rec.Result())
