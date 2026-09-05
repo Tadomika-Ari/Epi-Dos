@@ -13,6 +13,8 @@ from dotenv import load_dotenv
 import re
 from vosk import Model, KaldiRecognizer, SetLogLevel
 import json
+import requests
+from src.subsystem.search_web import search_web
 
 from google import genai
 from google.genai import types
@@ -91,22 +93,15 @@ def execute_command(commande_raw):
                 subprocess.run(commande_raw, shell=True)
         except Exception as e:
             pass
-
+    
 def gemini():
     clear_screen()
-    print("==================================================")
-    print("       🤖 BIENVENUE SUR VOTRE GEMINI CHATBOT      ")
-    print("==================================================")
+    print("Initialisation Tranquillity")
     
     api_key = get_api_key()
     model_name = IA_NAME
     
-    print("\n==================================================")
-    print("        ⚙️ CONFIGURATION DU CONTEXTE DE DÉPART    ")
-    print("==================================================")
-    print("Définissez le rôle, la personnalité ou le contexte de votre chatbot.")
-    print("Exemple : 'Tu es un expert en programmation Python cynique mais d'une grande aide.'")
-    print("Laissez vide pour le comportement par défaut d'un assistant utile.\n")
+    print("Initialisation de la personalité")
 
     with open("settings/personality.txt", "r", encoding="utf-8") as f:
         content = f.read()
@@ -125,7 +120,8 @@ def gemini():
         chat = client.chats.create(
             model=model_name,
             config=types.GenerateContentConfig(
-                system_instruction=system_instruction
+                system_instruction=system_instruction,
+                tools=[search_web]
             ),
             history=[]
         )
@@ -148,7 +144,6 @@ def gemini():
     print("             💬 CHAT INITIALISÉ AVEC SUCCÈS        ")
     print("==================================================")
     print(f"Modèle utilisé  : {model_name}")
-    print(f"Contexte système: \"{system_instruction}\"")
     print("--------------------------------------------------")
     print("Instructions :")
     print(" - Tapez votre message et appuyez sur Entrée.")
@@ -165,7 +160,7 @@ def gemini():
     t.start()
 
     one_use = False
-    print("GO !")
+    print("En écoute...")
     with sd.RawInputStream(
             samplerate=SAMPLE_RATE,
             blocksize=BLOCK_SIZE,
@@ -177,7 +172,6 @@ def gemini():
             try:
                 data = audio_queue.get()
                 audio_q: "queue.Queue[str | None]" = queue.Queue()
-                print("Parle !")
                 if rec.AcceptWaveform(data) and one_use == False:
                     one_use = True
                     result = json.loads(rec.Result())
@@ -199,31 +193,22 @@ def gemini():
 
                     print("Vous", user_input)
                     print(" Assistant : ", end="", flush=True)
-                    response = chat.send_message_stream(user_input)
+                    response = chat.send_message(user_input)
 
-                    streamed_text = ""
-                    spoken_upto = 0
+                    streamed_text = response.text
+                    print(streamed_text, flush=True)
+
                     command_start = None
-                    
-                    for chunk in response:
-                        chunk_text = getattr(chunk, "text", "")
-                        if not chunk_text:
-                            continue
+                    command_match = detect_command(streamed_text)
+                    if command_match:
+                        command_start, _ = command_match
+                        spoken_text = streamed_text[:command_start]
+                    else:
+                        spoken_text = streamed_text
 
-                        print(chunk_text, end="", flush=True)
-                        streamed_text += chunk_text
+                    if spoken_text.strip():
+                        tts_text_q.put(spoken_text)
 
-                        if command_start is None:
-                            command_match = detect_command(streamed_text)
-                            if command_match:
-                                command_start, _ = command_match
-
-                        safe_upto = command_start if command_start is not None else max(streamed_text.rfind(c) for c in ".!?:") + 1
-                        if safe_upto > spoken_upto:
-                            tts_fragment = streamed_text[spoken_upto:safe_upto]
-                            if tts_fragment.strip():
-                                tts_text_q.put(tts_fragment)
-                            spoken_upto = safe_upto
                     print("\n")
 
                     if command_start is not None:
